@@ -68,15 +68,16 @@ RRC topics across the corpus:
 
 | Metric | Score |
 |--------|-------|
-| Faithfulness | 0.650 |
-| Answer relevancy | 0.623 |
-| Context precision | 0.613 |
-| Context recall | 0.600 |
+| Faithfulness | 0.675 |
+| Answer relevancy | 0.628 |
+| Context precision | 0.675 |
+| Context recall | 0.750 |
 
 Scores above 0.6 across all four metrics indicate reliable retrieval and
-grounded generation for domain-specific technical documents. The primary
-bottleneck is context precision — dense 3GPP tables and cross-references
-do not always chunk cleanly, which is the main lever for future improvement.
+grounded generation for domain-specific technical documents. Context recall
+of 0.750 reflects strong corpus coverage across the full NR physical layer
+stack. Context precision remains the primary lever for future improvement,
+as dense 3GPP tables and cross-references do not always chunk cleanly.
 
 ---
 
