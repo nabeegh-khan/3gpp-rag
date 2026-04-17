@@ -22,6 +22,14 @@ in plain English and receive precise, cited answers grounded in the source docum
 
 ---
 
+## Demo
+
+![Multi-query chat showing modulation orders and subcarrier spacing answers with citations](docs/screenshots/screenshot_02_multi_query.png)
+
+![Beam management ML use cases and channel coding answers with citations](docs/screenshots/screenshot_03_beam_management_coding.png)
+
+---
+
 ## Corpus
 
 14 3GPP Release 18/19 specifications — 4,493 pages, 18,187 chunks indexed in ChromaDB:
@@ -161,6 +169,14 @@ curl -X POST http://127.0.0.1:8000/query \
 
 ## Author
 
-Nabeegh Khan — MEng Electrical & Computer Engineering, University of Toronto
+Nabeegh Khan — MEng Candidate Electrical & Computer Engineering, University of Toronto
 
 [GitHub](https://github.com/nabeegh-khan)
+
+---
+
+## AI Assistance Disclosure
+
+This project was built using Claude (Anthropic) as the primary development assistant. Architecture decisions, LangChain pipeline design, ChromaDB ingestion strategy, FastAPI implementation, RAGAS evaluation setup, and debugging were all developed through an iterative dialogue with Claude. I directed the goals, made decisions about corpus scope and evaluation methodology, executed every step locally, and validated outputs — but I would not claim independent authorship of the technical design.
+
+I'm disclosing this transparently because honest AI usage is more valuable to the ML community than presenting AI-assisted work as fully independent. My contribution was in scoping the problem domain (3GPP/6G standards), running and validating the full pipeline, interpreting the RAGAS results, and learning the production RAG stack through hands-on execution — not in originating the technical solutions from scratch.
