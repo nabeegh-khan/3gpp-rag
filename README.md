@@ -24,6 +24,8 @@ in plain English and receive precise, cited answers grounded in the source docum
 
 ## Demo
 
+▶️ [Watch the demo on YouTube](https://youtu.be/tEcylKm4xwk)
+
 ![Multi-query chat showing modulation orders and subcarrier spacing answers with citations](docs/screenshots/screenshot_02_multi_query.png)
 
 ![Beam management ML use cases and channel coding answers with citations](docs/screenshots/screenshot_03_beam_management_coding.png)
