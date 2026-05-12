@@ -177,8 +177,6 @@ Nabeegh Khan — MEng Candidate Electrical & Computer Engineering, University of
 
 ---
 
-## AI Assistance Disclosure
+## AI Assistance
 
-This project was built using Claude (Anthropic) as the primary development assistant. Architecture decisions, LangChain pipeline design, ChromaDB ingestion strategy, FastAPI implementation, RAGAS evaluation setup, and debugging were all developed through an iterative dialogue with Claude. I directed the goals, made decisions about corpus scope and evaluation methodology, executed every step locally, and validated outputs — but I would not claim independent authorship of the technical design.
-
-I'm disclosing this transparently because honest AI usage is more valuable to the ML community than presenting AI-assisted work as fully independent. My contribution was in scoping the problem domain (3GPP/6G standards), running and validating the full pipeline, interpreting the RAGAS results, and learning the production RAG stack through hands-on execution — not in originating the technical solutions from scratch.
+This project was developed with significant assistance from Claude (Anthropic). Claude generated the implementation code, recommended the LangChain + ChromaDB + RAGAS stack, and helped with debugging. My contribution was scoping the corpus to 3GPP Release 18/19 NR specifications, running the ingestion pipeline against 4,493 pages of real specs, validating outputs against the source documents, interpreting the RAGAS faithfulness and context recall scores, and learning the production RAG stack hands-on. I treat this project as a learning artifact rather than independent technical work.
