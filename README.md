@@ -1,43 +1,36 @@
-# 3GPP Specification Assistant — Production RAG System
+# 3GPP Specification Assistant (RAG)
 
-A retrieval-augmented generation (RAG) system for querying 3GPP 5G/6G technical
-specifications using natural language. Engineers and researchers can ask questions
-in plain English and receive precise, cited answers grounded in the source documents
-— no more manual searching through hundreds of pages of dense standards text.
+A retrieval-augmented QA system over 3GPP 5G/6G specifications. Ask a question in plain English and get an answer grounded in the specs, with the source document and page cited.
 
----
+**TL;DR.** Indexed 14 3GPP NR specs (4,493 pages, 18,187 chunks) in ChromaDB and answer questions with GPT-4o-mini, returning citations to the exact spec and page. On a 10-question test set, RAGAS scores faithfulness 0.675 and context recall 0.750. It's a working prototype with honest, not production-grade, retrieval quality.
+
+**Demo:** [watch it run on YouTube](https://youtu.be/tEcylKm4xwk).
+
+## Problem
+
+3GPP specifications are long, cross-referenced, and dense. Finding the one clause that answers a specific question ("what modulation orders does PDSCH support?") usually means grepping across hundreds of pages in several documents. A retrieval-augmented system can pull the relevant passages and let an LLM answer from them, with citations so you can check the source rather than trust the model.
+
+**Example.** *"What are the supported modulation orders Qm for PDSCH in NR?"* → QPSK (Qm=2), 16QAM (Qm=4), 64QAM (Qm=6), 256QAM (Qm=8), cited to 3GPP TS 38.211.
 
 ## What it does
 
-- Accepts natural language queries about 3GPP NR specifications
-- Retrieves the most semantically relevant passages from a corpus of 14 Release 18/19 specs
-- Generates grounded answers with exact source document and page number citations
-- Serves answers via a REST API (FastAPI) and a chat interface (Streamlit)
-- Traces every pipeline run in LangSmith for debugging and monitoring
+- Takes a natural-language question about NR specifications.
+- Retrieves the most relevant passages from the indexed corpus.
+- Answers with GPT-4o-mini, grounded in the retrieved passages and citing the source spec and page.
+- Serves through a FastAPI endpoint and a Streamlit chat UI, with LangSmith tracing on each run.
 
-**Example query:** *"What are the supported modulation orders Qm for PDSCH in NR?"*
+![Multi-query chat with citations](docs/screenshots/screenshot_02_multi_query.png)
+*Answers to modulation-order and subcarrier-spacing questions, each with source citations.*
 
-**Example answer:** PDSCH supports QPSK (Qm=2), 16QAM (Qm=4), 64QAM (Qm=6), and
-256QAM (Qm=8) — (3GPP TS 38.211, Page 32)
-
----
-
-## Demo
-
-▶️ [Watch the demo on YouTube](https://youtu.be/tEcylKm4xwk)
-
-![Multi-query chat showing modulation orders and subcarrier spacing answers with citations](docs/screenshots/screenshot_02_multi_query.png)
-
-![Beam management ML use cases and channel coding answers with citations](docs/screenshots/screenshot_03_beam_management_coding.png)
-
----
+![Beam management and channel coding answers](docs/screenshots/screenshot_03_beam_management_coding.png)
+*Answers on beam-management ML use cases and channel coding, with citations.*
 
 ## Corpus
 
-14 3GPP Release 18/19 specifications — 4,493 pages, 18,187 chunks indexed in ChromaDB:
+14 3GPP Release 18/19 specifications, 4,493 pages, 18,187 chunks in ChromaDB.
 
 | Spec | Title |
-|------|-------|
+|---|---|
 | TS 38.104 | NR; Base station radio transmission and reception |
 | TS 38.211 | NR; Physical channels and modulation |
 | TS 38.212 | NR; Multiplexing and channel coding |
@@ -52,131 +45,76 @@ in plain English and receive precise, cited answers grounded in the source docum
 | TR 38.873 | MIMO enhancements for NR |
 | TR 38.912 | Study on new radio access technology |
 
----
+## Approach
 
-## Architecture
-
-**Offline indexing (run once):**
-
+**Indexing (once):**
 ```
 PDF specs → PyPDF loader → RecursiveCharacterTextSplitter (1000 chars, 200 overlap)
-         → OpenAI text-embedding-3-small → ChromaDB (18,187 chunks stored to disk)
+          → OpenAI text-embedding-3-small → ChromaDB (18,187 chunks on disk)
 ```
 
-**Online query serving (per request):**
-
+**Query (per request):**
 ```
-User query → ChromaDB similarity search (k=5) → GPT-4o-mini with citation prompt
-           → Grounded answer with source citations
-           → FastAPI /query endpoint ← Streamlit chat UI
+question → ChromaDB similarity search (k=5) → GPT-4o-mini with a citation prompt
+         → grounded answer + citations → FastAPI /query ← Streamlit UI
 ```
 
-## RAGAS Evaluation
+Key choices: fixed-size character chunking with overlap as a simple, reproducible baseline; `k=5` retrieved chunks per query; and a prompt that requires the model to cite the retrieved sources, so answers are checkable against the specs.
 
-Evaluated on a 10-question test set covering physical layer, architecture, and
-RRC topics across the corpus:
+## Evaluation
+
+RAGAS on a 10-question test set spanning physical-layer, architecture, and RRC topics.
 
 | Metric | Score |
-|--------|-------|
+|---|---|
 | Faithfulness | 0.675 |
 | Answer relevancy | 0.628 |
 | Context precision | 0.675 |
 | Context recall | 0.750 |
 
-Scores above 0.6 across all four metrics indicate reliable retrieval and
-grounded generation for domain-specific technical documents. Context recall
-of 0.750 reflects strong corpus coverage across the full NR physical layer
-stack. Context precision remains the primary lever for future improvement,
-as dense 3GPP tables and cross-references do not always chunk cleanly.
+Recall at 0.750 says retrieval usually pulls the relevant passage. Faithfulness and context precision in the high 0.6s say the answers are mostly grounded but not always, and that retrieval pulls some irrelevant chunks. Precision is the weak spot: 3GPP tables and cross-references don't chunk cleanly with fixed-size splitting, so a chunk can carry a fragment of a table without its header. The 10-question set is also small, so treat these as indicative, not definitive.
 
----
+## Run it
 
-## Tech stack
-
-- **Ingestion:** LangChain, PyPDF, RecursiveCharacterTextSplitter
-- **Embeddings:** OpenAI text-embedding-3-small
-- **Vector store:** ChromaDB (local), extensible to Pinecone
-- **LLM:** GPT-4o-mini via OpenAI API
-- **Orchestration:** LangChain LCEL, LangGraph-ready
-- **Backend:** FastAPI + Uvicorn
-- **Frontend:** Streamlit
-- **Evaluation:** RAGAS (faithfulness, answer relevancy, context precision, context recall)
-- **Monitoring:** LangSmith tracing
-- **Environment:** conda (Python 3.11)
-
----
-
-## Project structure
-
-```
-3gpp-rag/
-├── data/
-│   └── raw/                  # 3GPP PDF specs (not tracked in git)
-├── notebooks/
-│   ├── 01_ingestion_test.ipynb
-│   ├── 02_chunking_and_embedding.ipynb
-│   ├── 03_rag_chain.ipynb
-│   └── 04_evaluation.ipynb
-├── src/
-│   └── api/
-│       └── main.py           # FastAPI backend
-├── frontend/
-│   └── app.py                # Streamlit chat interface
-├── .env.example
-└── README.md
-```
-
-## Running locally
-
-**1. Clone the repo and create the environment:**
 ```bash
 git clone https://github.com/nabeegh-khan/3gpp-rag.git
 cd 3gpp-rag
 conda create -n rag3gpp python=3.11 -y
 conda activate rag3gpp
-pip install langchain langchain-openai langchain-community langchain-chroma \
-    langchain-text-splitters openai chromadb pypdf python-dotenv fastapi \
-    "uvicorn[standard]" streamlit ragas langsmith requests tqdm datasets numpy
+pip install -r requirements.txt
 ```
 
-**2. Add API keys:**
+Add your keys (never commit them):
 ```bash
-cp .env.example .env
-# edit .env and add your OPENAI_API_KEY and LANGSMITH_API_KEY
+cp .env.example .env      # then add OPENAI_API_KEY and LANGSMITH_API_KEY
 ```
 
-**3. Download 3GPP specs and build the vector store:**
+Download the Release 18/19 specs from the [3GPP archive](https://www.3gpp.org/ftp/Specs/archive/38_series/) into `data/raw/`, then run notebooks `01` and `02` to build the vector store. Start the API with `uvicorn src.api.main:app --port 8000` and the UI with `streamlit run frontend/app.py`.
 
-Download Release 18/19 specs from https://www.3gpp.org/ftp/Specs/archive/38_series/
-and save PDFs to `data/raw/`. Then run notebooks 01 and 02 in order.
-
-**4. Start the API server:**
-```bash
-uvicorn src.api.main:app --reload --port 8000
+```
+3gpp-rag/
+├── data/raw/               # 3GPP PDFs (gitignored)
+├── notebooks/              # 01 ingestion → 02 embedding → 03 chain → 04 evaluation
+├── src/api/main.py         # FastAPI backend
+├── frontend/app.py         # Streamlit UI
+├── .env.example
+├── requirements.txt
+└── README.md
 ```
 
-**5. Start the Streamlit frontend:**
-```bash
-streamlit run frontend/app.py
-```
+## Limitations and next steps
 
-**6. Query via curl:**
-```bash
-curl -X POST http://127.0.0.1:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What modulation schemes are supported for PDSCH in NR?"}'
-```
+- **Retrieval precision is the bottleneck.** Fixed-size chunking breaks 3GPP tables and cross-references. Table-aware or structure-aware chunking, and a reranker over the top-k, are the obvious next steps.
+- **Small evaluation set.** 10 questions is enough to see where it stands, not enough to trust the exact numbers. A larger, categorized test set would make the RAGAS scores meaningful.
+- **No answer-refusal handling.** The system doesn't yet detect when retrieval missed and it should say "not found" instead of answering from weak context.
+- **Costs and dependencies.** Uses the OpenAI API for embeddings and generation, so running it costs money and depends on an external service; a local embedding model and open LLM would remove that.
 
----
+## References
 
-## Author
+- 3GPP Release 18/19 NR specifications, [3GPP archive](https://www.3gpp.org/ftp/Specs/archive/38_series/).
+- Es et al. "RAGAS: Automated Evaluation of Retrieval Augmented Generation." 2023.
+- Lewis et al. "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." NeurIPS 2020.
 
-Nabeegh Khan — MEng Candidate Electrical & Computer Engineering, University of Toronto
+## Authorship and tooling
 
-[GitHub](https://github.com/nabeegh-khan)
-
----
-
-## AI Assistance
-
-This project was developed with significant assistance from Claude (Anthropic). Claude generated the implementation code, recommended the LangChain + ChromaDB + RAGAS stack, and helped with debugging. My contribution was scoping the corpus to 3GPP Release 18/19 NR specifications, running the ingestion pipeline against 4,493 pages of real specs, validating outputs against the source documents, interpreting the RAGAS faithfulness and context recall scores, and learning the production RAG stack hands-on. I treat this project as a learning artifact rather than independent technical work.
+I scoped the corpus to 3GPP Release 18/19 NR specs, designed the pipeline and the evaluation, ran the ingestion against the real specs, and validated answers against the source documents and interpreted the RAGAS scores. I used Claude (Anthropic) as a coding assistant to speed up implementation and debugging; I reviewed, tested, and modified the generated code and am responsible for its correctness. The research decisions, analysis, and conclusions are my own.
