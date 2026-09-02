@@ -2,7 +2,7 @@
 
 A retrieval-augmented QA system over 3GPP 5G/6G specifications. Ask a question in plain English and get an answer grounded in the specs, with the source document and page cited.
 
-**TL;DR.** Indexed 14 3GPP NR specs (4,493 pages, 18,187 chunks) in ChromaDB and answer questions with GPT-4o-mini, returning citations to the exact spec and page. On a 10-question test set, RAGAS scores faithfulness 0.675 and context recall 0.750. It's a working prototype with honest, not production-grade, retrieval quality.
+**TL;DR.** Indexed 13 3GPP NR specs (4,493 pages, 18,187 chunks) in ChromaDB and answer questions with GPT-4o-mini, returning citations to the exact spec and page. On a 10-question test set, RAGAS scores faithfulness 0.675 and context recall 0.750. It's a working prototype with honest, not production-grade, retrieval quality.
 
 **Demo:** [watch it run on YouTube](https://youtu.be/tEcylKm4xwk).
 
@@ -27,7 +27,7 @@ A retrieval-augmented QA system over 3GPP 5G/6G specifications. Ask a question i
 
 ## Corpus
 
-14 3GPP Release 18/19 specifications, 4,493 pages, 18,187 chunks in ChromaDB.
+13 3GPP Release 18/19 specifications, 4,493 pages, 18,187 chunks in ChromaDB.
 
 | Spec | Title |
 |---|---|
@@ -72,7 +72,7 @@ RAGAS on a 10-question test set spanning physical-layer, architecture, and RRC t
 | Context precision | 0.675 |
 | Context recall | 0.750 |
 
-Recall at 0.750 says retrieval usually pulls the relevant passage. Faithfulness and context precision in the high 0.6s say the answers are mostly grounded but not always, and that retrieval pulls some irrelevant chunks. Precision is the weak spot: 3GPP tables and cross-references don't chunk cleanly with fixed-size splitting, so a chunk can carry a fragment of a table without its header. The 10-question set is also small, so treat these as indicative, not definitive.
+Recall at 0.750 says retrieval usually pulls the relevant passage. Faithfulness and context precision, both 0.675, say the answers are mostly grounded but not always, and that retrieval pulls some irrelevant chunks alongside the right ones. Answer relevancy is the lowest at 0.628, which is what you would expect downstream of imprecise context: the model answers from a mix of relevant and off-target passages, so the response drifts from the question. The likely root cause is segmentation rather than the model. 3GPP tables and cross-references don't chunk cleanly with fixed-size splitting, so a chunk can carry a fragment of a table without its header. The 10-question set is small, so treat these as indicative, not definitive.
 
 ## Run it
 
@@ -106,7 +106,7 @@ Download the Release 18/19 specs from the [3GPP archive](https://www.3gpp.org/ft
 
 - **Retrieval precision is the bottleneck.** Fixed-size chunking breaks 3GPP tables and cross-references. Table-aware or structure-aware chunking, and a reranker over the top-k, are the obvious next steps.
 - **Small evaluation set.** 10 questions is enough to see where it stands, not enough to trust the exact numbers. A larger, categorized test set would make the RAGAS scores meaningful.
-- **No answer-refusal handling.** The system doesn't yet detect when retrieval missed and it should say "not found" instead of answering from weak context.
+- **No abstention.** The system always answers. It has no selective-prediction step that detects when retrieval has missed and returns "not found" instead of answering from weak context, and it reports accuracy without reporting coverage. Given that context precision is the bottleneck, abstaining on low-evidence queries would likely raise faithfulness on the questions it does answer.
 - **Costs and dependencies.** Uses the OpenAI API for embeddings and generation, so running it costs money and depends on an external service; a local embedding model and open LLM would remove that.
 
 ## References
